@@ -19,7 +19,7 @@ class ItsjesseMobile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Jesse Eldridge',
+      title: "It's Jesse!",
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
