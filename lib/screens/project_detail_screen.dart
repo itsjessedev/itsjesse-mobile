@@ -260,8 +260,15 @@ class ProjectDetailScreen extends StatelessWidget {
 
   Future<void> _launchUrl(String url) async {
     final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
+    try {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      // Fallback: try without mode specification
+      try {
+        await launchUrl(uri);
+      } catch (_) {
+        // URL launch failed silently
+      }
     }
   }
 }
