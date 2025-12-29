@@ -35,13 +35,32 @@ class AboutScreen extends StatelessWidget {
                             width: 3,
                           ),
                         ),
-                        child: const CircleAvatar(
-                          backgroundColor: Color(0xFF1A1A2E),
-                          child: Icon(
-                            Icons.person,
-                            size: 50,
-                            color: Color(0xFF6366F1),
-                          ),
+                        child: ClipOval(
+                          child: data.profile.photoUrl != null
+                              ? Image.network(
+                                  data.profile.photoUrl!,
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const CircleAvatar(
+                                      backgroundColor: Color(0xFF1A1A2E),
+                                      child: Icon(
+                                        Icons.person,
+                                        size: 50,
+                                        color: Color(0xFF6366F1),
+                                      ),
+                                    );
+                                  },
+                                )
+                              : const CircleAvatar(
+                                  backgroundColor: Color(0xFF1A1A2E),
+                                  child: Icon(
+                                    Icons.person,
+                                    size: 50,
+                                    color: Color(0xFF6366F1),
+                                  ),
+                                ),
                         ),
                       ),
                       const SizedBox(height: 16),
