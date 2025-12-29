@@ -1,5 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../models/portfolio_data.dart';
 
 class ProjectDetailScreen extends StatefulWidget {
@@ -14,6 +19,9 @@ class ProjectDetailScreen extends StatefulWidget {
 class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   int _currentScreenshot = 0;
   final PageController _pageController = PageController();
+  bool _isDownloading = false;
+  double _downloadProgress = 0;
+  final Dio _dio = Dio();
 
   @override
   void dispose() {
@@ -325,6 +333,38 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                         ),
                     ],
                   ),
+                  // APK Download Button
+                  if (project.downloadUrl != null) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _isDownloading ? null : _showDownloadDialog,
+                        icon: _isDownloading
+                            ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  value: _downloadProgress,
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.android),
+                        label: Text(_isDownloading
+                            ? 'Downloading ${(_downloadProgress * 100).toStringAsFixed(0)}%'
+                            : 'Download APK'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF10B981),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 32),
                 ],
               ),
@@ -380,5 +420,172 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         // URL launch failed silently
       }
     }
+  }
+
+  Future<void> _downloadApk(String downloadUrl) async {
+    setState(() {
+      _isDownloading = true;
+      _downloadProgress = 0;
+    });
+
+    try {
+      // Request storage permission on older Android versions
+      if (Platform.isAndroid) {
+        final status = await Permission.storage.status;
+        if (!status.isGranted) {
+          await Permission.storage.request();
+        }
+      }
+
+      // Get the downloads directory
+      final directory = await getExternalStorageDirectory();
+      if (directory == null) {
+        debugPrint('Could not get external storage directory');
+        setState(() => _isDownloading = false);
+        return;
+      }
+
+      // Extract filename from URL
+      final filename = downloadUrl.split('/').last;
+      final apkPath = '${directory.path}/$filename';
+      final file = File(apkPath);
+
+      // Delete old APK if exists
+      if (await file.exists()) {
+        await file.delete();
+      }
+
+      // Download the APK
+      await _dio.download(
+        downloadUrl,
+        apkPath,
+        onReceiveProgress: (received, total) {
+          if (total != -1) {
+            setState(() {
+              _downloadProgress = received / total;
+            });
+          }
+        },
+      );
+
+      setState(() => _isDownloading = false);
+
+      // Verify file exists
+      if (!await file.exists()) {
+        debugPrint('APK file was not downloaded');
+        return;
+      }
+
+      // Open the APK for installation
+      final result = await OpenFilex.open(apkPath);
+      debugPrint('OpenFilex result: ${result.type} - ${result.message}');
+    } catch (e) {
+      debugPrint('Error downloading APK: $e');
+      setState(() => _isDownloading = false);
+    }
+  }
+
+  void _showDownloadDialog() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A2E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[600],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF6366F1).withAlpha(51),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.android,
+                      color: Color(0xFF6366F1),
+                      size: 48,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Download ${widget.project.title}',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Install the Android app on your device',
+                    style: TextStyle(
+                      color: Colors.grey[400],
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  if (_isDownloading) ...[
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
+                        value: _downloadProgress,
+                        backgroundColor: const Color(0xFF0A0A0F),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          Color(0xFF6366F1),
+                        ),
+                        minHeight: 8,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      '${(_downloadProgress * 100).toStringAsFixed(0)}%',
+                      style: const TextStyle(
+                        color: Color(0xFF6366F1),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ] else
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _downloadApk(widget.project.downloadUrl!);
+                        },
+                        icon: const Icon(Icons.download),
+                        label: const Text('Download APK'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF6366F1),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }

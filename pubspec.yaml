@@ -2,7 +2,7 @@ name: itsjesse_mobile
 description: "Jesse Eldridge's portfolio - Native mobile app demonstrating Website-to-App conversion with auto-sync capability"
 publish_to: 'none'
 
-version: 1.0.8+8
+version: 1.0.10+10
 
 environment:
   sdk: ^3.10.4

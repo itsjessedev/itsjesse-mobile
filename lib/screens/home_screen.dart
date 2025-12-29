@@ -6,6 +6,7 @@ import '../widgets/project_card.dart';
 import 'project_detail_screen.dart';
 import 'about_screen.dart';
 import 'contact_screen.dart';
+import 'resume_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -81,6 +82,11 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Projects',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.description_outlined),
+            activeIcon: Icon(Icons.description),
+            label: 'Resume',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
             activeIcon: Icon(Icons.person),
             label: 'About',
@@ -128,8 +134,10 @@ class _HomeScreenState extends State<HomeScreen> {
       case 1:
         return _buildProjectsTab();
       case 2:
-        return AboutScreen(data: _data!);
+        return const ResumeScreen();
       case 3:
+        return AboutScreen(data: _data!);
+      case 4:
         return ContactScreen(profile: _data!.profile);
       default:
         return _buildHomeTab();
