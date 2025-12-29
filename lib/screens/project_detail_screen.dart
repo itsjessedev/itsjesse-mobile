@@ -2,13 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/portfolio_data.dart';
 
-class ProjectDetailScreen extends StatelessWidget {
+class ProjectDetailScreen extends StatefulWidget {
   final Project project;
 
   const ProjectDetailScreen({super.key, required this.project});
 
   @override
+  State<ProjectDetailScreen> createState() => _ProjectDetailScreenState();
+}
+
+class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
+  int _currentScreenshot = 0;
+  final PageController _pageController = PageController();
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final project = widget.project;
+
     return Scaffold(
       body: CustomScrollView(
         slivers: [
@@ -21,27 +37,57 @@ class ProjectDetailScreen extends StatelessWidget {
                 project.title,
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      const Color(0xFF6366F1).withValues(alpha: 0.3),
-                      const Color(0xFF8B5CF6).withValues(alpha: 0.3),
-                    ],
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    project.title,
-                    style: TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white.withValues(alpha: 0.1),
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Hero image
+                  if (project.image.isNotEmpty && project.image.startsWith('http'))
+                    Image.network(
+                      project.image,
+                      fit: BoxFit.cover,
+                      alignment: Alignment.center,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                const Color(0xFF6366F1).withAlpha(77),
+                                const Color(0xFF8B5CF6).withAlpha(77),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                  else
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            const Color(0xFF6366F1).withAlpha(77),
+                            const Color(0xFF8B5CF6).withAlpha(77),
+                          ],
+                        ),
+                      ),
+                    ),
+                  // Gradient overlay for title readability
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          const Color(0xFF0A0A0F).withAlpha(200),
+                        ],
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
             ),
             actions: [
@@ -91,6 +137,70 @@ class ProjectDetailScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 24),
+
+                  // Screenshot Carousel
+                  if (project.screenshots.isNotEmpty) ...[
+                    const Text(
+                      'Screenshots',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 200,
+                      child: PageView.builder(
+                        controller: _pageController,
+                        onPageChanged: (index) {
+                          setState(() {
+                            _currentScreenshot = index;
+                          });
+                        },
+                        itemCount: project.screenshots.length,
+                        itemBuilder: (context, index) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                project.screenshots[index],
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: const Color(0xFF1A1A2E),
+                                    child: const Center(
+                                      child: Icon(Icons.image_not_supported, color: Colors.grey),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Page indicators
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        project.screenshots.length,
+                        (index) => Container(
+                          width: 8,
+                          height: 8,
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _currentScreenshot == index
+                                ? const Color(0xFF6366F1)
+                                : Colors.grey[600],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
 
                   // The Problem
                   _buildSection(

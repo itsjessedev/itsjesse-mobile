@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/portfolio_data.dart';
 import '../services/portfolio_service.dart';
+import '../services/update_service.dart';
 import '../widgets/project_card.dart';
 import 'project_detail_screen.dart';
 import 'about_screen.dart';
@@ -15,6 +16,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final PortfolioService _portfolioService = PortfolioService();
+  final UpdateService _updateService = UpdateService();
   PortfolioData? _data;
   bool _isLoading = true;
   String? _error;
@@ -24,6 +26,17 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadData();
+    _checkForUpdates();
+  }
+
+  Future<void> _checkForUpdates() async {
+    // Small delay to let the UI load first
+    await Future.delayed(const Duration(seconds: 2));
+
+    final updateInfo = await _updateService.checkForUpdate();
+    if (updateInfo != null && mounted) {
+      UpdateService.showUpdateDialog(context, updateInfo, _updateService);
+    }
   }
 
   Future<void> _loadData({bool forceRefresh = false}) async {

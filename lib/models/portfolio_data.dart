@@ -138,8 +138,10 @@ class Project {
   final String category;
   final String serviceId;
   final String image;
+  final List<String> screenshots;
   final String? githubUrl;
   final String? demoUrl;
+  final String? downloadUrl;
   final bool featured;
 
   Project({
@@ -154,8 +156,10 @@ class Project {
     required this.category,
     required this.serviceId,
     required this.image,
+    this.screenshots = const [],
     this.githubUrl,
     this.demoUrl,
+    this.downloadUrl,
     this.featured = false,
   });
 
@@ -172,8 +176,10 @@ class Project {
       category: json['category'] ?? '',
       serviceId: json['serviceId'] ?? '',
       image: json['image'] ?? '',
+      screenshots: List<String>.from(json['screenshots'] ?? []),
       githubUrl: json['githubUrl'],
       demoUrl: json['demoUrl'],
+      downloadUrl: json['downloadUrl'],
       featured: json['featured'] ?? false,
     );
   }
